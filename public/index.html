@@ -1,0 +1,200 @@
+<html>
+
+<head>
+    <title>Wygeneruj FV</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.debug.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script>
+        let invoices = [];
+
+        function removeEmpty(obj) {
+            Object.keys(obj).forEach((key) => (!obj[key]) && delete obj[key]);
+        }
+
+        function formatParams(params) {
+            return params !== {} ? '?' + Object
+                .keys(params)
+                .map(function(key) {
+                    return key + '=' + encodeURIComponent(params[key])
+                })
+                .join('&') : '';
+        }
+//funkcja wyszukująca faktury
+        function findInvoices() {
+            const form = $(`form[name='find-invoices']`);
+            const data = {};
+
+            ['seller', 'buyer', 'date_min', 'date_max'].forEach(name => data[name] = form.find(`input[name=${name}]`).val());
+
+            $.getJSON('http://localhost:3333/invoices' + formatParams(data), (data) => {
+                console.log(data);
+                invoices = data;
+                const target = document.getElementById('fv-target');
+                target.innerHTML = '';
+                for (let i = 0; i < invoices.length; ++i) {
+                    const iv = invoices[i];
+                    target.innerHTML += `<button class="generate-fv" data-fv-index=${i}>Wygeneruj FV dla nr ${iv.nr_faktury}, data ${iv.data_faktury}, sprz-kup (NIPY): ${iv.wystawiajacy_faktury} - ${iv.nabywca_faktury}</button>`
+                }
+            });
+        }
+
+        function submitMaterial() {
+            const form = $(`form[name='create-material']`);
+//alert o dodaniu materiału 
+            const data = {};
+            ['name', 'price', 'tax'].forEach(name => data[name] = form.find(`input[name=${name}]`).val());
+            $.ajax({
+                url: 'http://localhost:3333/materials',
+                type: 'PUT',
+                cache: false,
+                data,
+                success: () => alert('dodano materiał')
+            });
+        }
+//funkcja wyświetlająca materiały
+        function fetchMaterials() {
+            const target = document.getElementById('create-invoice-materials');
+            target.innerHTML = '';
+            $.get('http://localhost:3333/materials', (materials) => {
+                console.log(materials);
+                materials.forEach(material => {
+                    target.innerHTML += `
+                        ilość materiału
+                        (id: ${material.id_materialu}
+                        , nazwa: ${material.nazwa_materialu}
+                        , cena: ${material.cena_materialu} PLN
+                        , vat: ${material.vat_materialu}%):
+                        <input type='number' name='material-${material.id_materialu}' value=0 /></br>
+                    `;
+                });
+            });
+        }
+//funkcja tworząca fakture
+        function submitInvoice() {
+            const form = $(`form[name='create-invoice']`);
+            const data = {};
+
+            ['nr', 'seller','seller1', 'buyer','buyer1', 'date', 'count', 'date1'].forEach(name => data[name] = form.find(`input[name=${name}]`).val());
+
+            form.find('#create-invoice-materials').children('input').toArray().forEach(child => {
+                const val = $(child).val();
+                if (+val > 0) {
+                    data[$(child).attr("name")] = $(child).val();
+                }
+            });
+// alert o dodaniu faktury
+            console.log(data);
+
+            $.ajax({
+                url: 'http://localhost:3333/invoices',
+                type: 'PUT',
+                cache: false,
+                data,
+                success: () => alert('dodano fakturę')
+            });
+        }
+// generowanie pdf-u z fakturą
+        function genPdf(iv, date, materialsList, invoiceMaterials) {
+            const pdf = new jsPDF();
+            pdf.setFontSize(12);
+            pdf.text(`Numer ${iv.nr_faktury}`, 10, 10);
+            pdf.text(`Data wystawienia ${date}`, 140, 10);
+            pdf.text(`Dane firmy wystawiajacej fakture NIP: ${iv.wystawiajacy_faktury}`, 10, 20);
+            pdf.text(`${iv.wystawiajacy_nazwa}`, 10, 30);
+            pdf.text(`Dane firmy przeciwstawnej NIP: ${iv.nabywca_faktury}`, 10, 40);
+            pdf.text(`${iv.nabywca_nazwa}`, 10, 50);
+            pdf.text(`Material                              cena                          vat                             ilosc             lacznie`, 10, 60);
+
+            let sumAll = 0.0;
+            for (let i = 0; i < invoiceMaterials.length; ++i) {
+                const y = 70 + i * 10;
+                const invoiceMaterial = invoiceMaterials[i];
+                const listedMaterial = materialsList.find(el => el.id_materialu === invoiceMaterial.id_materialu);
+                pdf.text(`${listedMaterial.nazwa_materialu}`, 10, y);
+                pdf.text(`${listedMaterial.cena_materialu} PLN`, 70, y);
+                pdf.text(`${listedMaterial.vat_materialu}%`, 100, y);
+                pdf.text(`${invoiceMaterial.ilosc}`, 140, y);
+                const sum = (+invoiceMaterial.ilosc) * (+listedMaterial.cena_materialu) * (100 + listedMaterial.vat_materialu) / 100;
+                pdf.text(`${sum} PLN`, 165, y);
+                sumAll += sum;
+            }
+
+
+            pdf.text(`Rodzaj zaplaty gotowka/ przelew, naleznosc: ${sumAll} PLN`, 10, 180);
+            pdf.text(`Numer konta do przelewu: ${iv.numer_konta}`, 10, 200);
+            pdf.text(`Termin platnosci: ${iv.termin}`, 10, 210);
+
+
+            pdf.text(`Podpis firmy wystawiajacej`, 10, 250);
+            pdf.text(`...........................................`, 10, 260);
+
+            pdf.text(`Podpis firmy otrzymujacej`, 140, 250);
+            pdf.text(`.........................................`, 140, 260);
+            pdf.save();
+        }
+        //funkcja generowania faktury
+        $(document).on('click', '.generate-fv', event => {
+            $.get('http://localhost:3333/materials', (materialsList) => {
+                console.log('materialsList', materialsList);
+                const invoice = invoices[+$(event.target).data('fv-index')];
+                const date = invoice.data_faktury.substring(0, invoice.data_faktury.indexOf('T'));
+                console.log(invoice);
+                $.get(`http://localhost:3333/invoices/${invoice.id_faktury}/materials`, invoiceMaterials => {
+                    console.log('invoiceMaterials', invoiceMaterials);
+                    genPdf(invoice, date, materialsList, invoiceMaterials);
+                });
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <!--Pola tworzenia materiałów -->
+    <div>
+        <h2>Utwórz materiał</h2>
+        <form name='create-material' action='javascript:submitMaterial()'>
+            Nazwa materiału: <input type='text' name='name' /> </br>
+            Cena Materiału: <input type='number' name='price' /> </br>
+            Podatek vat w %: <input type='number' name='tax' /></br>
+            <input type="submit" value="Dodaj materiał" />
+        </form>
+    </div>
+
+    <hr>
+    <button onclick='fetchMaterials()'>znajdz materialy</button>
+    <hr>
+<!-- Pola wpisywania danych do tworzonej faktury -->
+    <div>
+        <h2>Utwórz fakturę</h2>
+        <form name='create-invoice' action='javascript:submitInvoice()'>
+            NR faktury: <input type='text' name='nr' /> </br>
+            NIP sprzedajacego: <input type='text' name='seller' /> </br>
+            Dane sprzedającego: <input type='text' name='seller1' /> </br>
+            NIP kupujacego: <input type='text' name='buyer' /> </br>
+            Dane kupujacego: <input type='text' name='buyer1' /> </br>
+            Data faktury: <input type='date' name='date' /> </br>
+            Numer konta: <input type='text' name='count' /> </br>
+            Data zapłaty: <input type='date' name='date1' /> </br> 
+            <div id='create-invoice-materials'></div>
+            <input type="submit" value="Dodaj fakturę" />
+        </form>
+    </div>
+
+    <hr>
+    <!-- Pola wyszukiwania faktur -->
+    <div>
+        <h2>Wyszukaj faktury (wszystkie pola są opcjonalne)</h2>
+        <form name='find-invoices' action='javascript:findInvoices()'>
+            NIP sprzedajacego: <input type='text' name='seller' /> </br>
+            NIP kupujacego: <input type='text' name='buyer' /> </br>
+            Min. data faktury: <input type='date' name='date_min' /> </br>
+            Max. data faktury: <input type='date' name='date_max' /> </br>
+            <input type="submit" value="Znajdź faktury" />
+        </form>
+    </div>
+
+
+    <div id='fv-target'></div>
+</body>
+
+</html>
