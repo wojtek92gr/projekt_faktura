@@ -1,6 +1,13 @@
-<html>
+<!DOCTYPE html>
 
 <head>
+    <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Faktura projekt</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="faktura.css">
+        <link href='https://fonts.googleapis.com/css?family=Bree Serif' rel='stylesheet'>
     <title>Wygeneruj FV</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.debug.js"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
@@ -63,7 +70,7 @@
                         (id: ${material.id_materialu}
                         , nazwa: ${material.nazwa_materialu}
                         , cena: ${material.cena_materialu} PLN
-                        , vat: ${material.vat_materialu}%):
+                        , vat: ${material.vat_materialu}%): 
                         <input type='number' name='material-${material.id_materialu}' value=0 /></br>
                     `;
                 });
@@ -149,22 +156,28 @@
 </head>
 
 <body>
+    <div class="grid-container">
+      
+      <div class="g1">
     <!--Pola tworzenia materiałów -->
-    <div>
+    <div name="fv1">
         <h2>Utwórz materiał</h2>
         <form name='create-material' action='javascript:submitMaterial()'>
             Nazwa materiału: <input type='text' name='name' /> </br>
-            Cena Materiału: <input type='number' name='price' /> </br>
+            Cena materiału: <input type='number' name='price' /> </br>
             Podatek vat w %: <input type='number' name='tax' /></br>
             <input type="submit" value="Dodaj materiał" />
         </form>
+
+        
+        <button id="bt" onclick='fetchMaterials()'>Pokaż bazę utworzonych materiałów</button>
+        
+
     </div>
 
-    <hr>
-    <button onclick='fetchMaterials()'>znajdz materialy</button>
-    <hr>
+    
 <!-- Pola wpisywania danych do tworzonej faktury -->
-    <div>
+    <div name="fv2">
         <h2>Utwórz fakturę</h2>
         <form name='create-invoice' action='javascript:submitInvoice()'>
             NR faktury: <input type='text' name='nr' /> </br>
@@ -180,9 +193,9 @@
         </form>
     </div>
 
-    <hr>
+    
     <!-- Pola wyszukiwania faktur -->
-    <div>
+    <div name="fv3">
         <h2>Wyszukaj faktury (wszystkie pola są opcjonalne)</h2>
         <form name='find-invoices' action='javascript:findInvoices()'>
             NIP sprzedajacego: <input type='text' name='seller' /> </br>
@@ -195,6 +208,9 @@
 
 
     <div id='fv-target'></div>
+
+</div>
+</div>
 </body>
 
 </html>

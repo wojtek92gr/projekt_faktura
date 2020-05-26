@@ -1,0 +1,96 @@
+body
+{
+    background-image: white;
+}
+div
+{
+    font-family: Bree Serif;
+}
+input[type="submit"]
+{
+    font-family: Bree Serif; 
+    background-color:rgba(219, 219, 219, 0.911);
+    border-radius: 5px;
+    border: solid 2px gray;
+    height: 30px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+button[id="bt"]
+{
+    font-family: Bree Serif; 
+    background-color:rgba(219, 219, 219, 0.911);
+    border-radius: 5px;
+    border: solid 2px gray;
+    height: 30px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+h2
+{
+    text-align: center;
+}
+.container
+{
+    width:1024px;
+}
+.grid-container {
+    display: grid;
+    grid-template-columns: 1fr 900px 1fr;
+    grid-template-rows: 1fr;
+    gap: 1px 1px;
+    grid-template-areas: ". g1 .";
+  }
+  
+.g1 { grid-area: g1; }
+
+div[name="fv1"]
+{
+    background-color:rgba(226, 234, 238, 0.993);
+    border-radius: 20px;
+    border: solid 3px gray;
+    padding: 10px;  
+}
+div[name="fv2"]
+{
+    background-color:rgba(229, 238, 229, 0.959);
+    border-radius: 20px;
+    border: solid 3px gray;
+    padding: 10px;  
+    margin:3px;
+}
+div[name="fv3"]
+{
+    background-color:rgba(232, 226, 235, 0.973);
+    border-radius: 20px;
+    border: solid 3px gray;
+    padding: 10px;  
+    margin:3px;
+}
+.generate-fv
+{
+    font-family: Bree Serif; 
+    background-color:gray;
+    border-radius: 5px;
+    border: solid 2px rgb(36, 33, 33);
+    height: 30px;
+    width:700px;
+    cursor: pointer;
+    margin: 3px;
+}
+div[id="fv-target"]
+{
+    padding-left: 100px;
+    padding-right: 100px;
+    padding-top: 20px;
+}
+div[id="create-invoice-materials"]
+{
+    background-color:rgb(230, 220, 223);
+    border-radius: 20px;
+    border: solid 3px gray;
+    padding: 10px;  
+    margin:3px; 
+}
